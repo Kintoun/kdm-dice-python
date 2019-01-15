@@ -22,27 +22,29 @@ class AttackData(object):
         self.cwaxe = False
         self.devastating = 0
         self.scrapsword = False
-        self.scrapdagger = False
+        self.mightystrike = 0
         self.screamingset = False
         self.earlyiron = False
         self.sharp = False
-        self.hollow = False
+        self.combomaster = False
+        self.beastknuckles = False
+        self.axe = False
 
-    def is_wound(self, roll, strength):
+    def is_wound(self, roll, strength, toughness):
         if roll == 1:
             return False
         if roll == 10:
             return True
         if self.sharp:
             strength += random.randint(1, 10)
-        return roll + strength >= self.toughness
+        return roll + strength >= toughness
 
     @staticmethod
     def is_hit(roll, hit):
         return roll == 10 or (roll != 1 and (roll >= hit))
 
     @staticmethod
-    def apply_hollow(roll):
+    def apply_combomaster(roll):
         count = roll.count(10)
         while count > 0:
             new_roll = random.randint(1, 10)
@@ -54,16 +56,20 @@ class AttackData(object):
         # Snapshot weapon data to isolate any modifiers
         weapon = copy.deepcopy(self.weapon)
         hit_rolls = roll_n_dice(weapon.speed)
-        if self.hollow:
-            self.apply_hollow(hit_rolls)
+        if self.combomaster:
+            self.apply_combomaster(hit_rolls)
         hits = 0.0
         wounds = 0.0
         auto_wound = False
         savage = self.savage
-        if self.scrapsword and 10 in hit_rolls:
-            weapon.strength += 4
-        elif self.scrapdagger and 10 in hit_rolls:
-            weapon.strength += 2
+        toughness = self.toughness
+        axe_spec = self.axe
+        if self.scrapsword:
+            for _ in range(hit_rolls.count(10)):
+                weapon.strength += 4
+        elif self.mightystrike:
+            for _ in range(hit_rolls.count(10)):
+                weapon.strength += self.mightystrike * 2
 
         if self.earlyiron and 1 in hit_rolls:
             return 0.0, 0.0
@@ -75,12 +81,22 @@ class AttackData(object):
                     wounds += 1.0
                     continue
                 wound_roll = random.randint(1, 10)
-                if self.is_wound(wound_roll, weapon.strength):
-                    wounds += 1.0
-                    if self.devastating > 0:
-                        wounds += self.devastating
-                    if self.screamingset:
-                        auto_wound = True
+                if not self.is_wound(wound_roll, weapon.strength, toughness):
+                    if axe_spec:
+                        axe_spec = False
+                        wound_roll = random.randint(1, 10)
+                        if not self.is_wound(wound_roll, weapon.strength, toughness):
+                            continue
+                    else:
+                        continue
+
+                wounds += 1.0
+                if self.devastating > 0:
+                    wounds += self.devastating
+                if self.screamingset:
+                    auto_wound = True
+                if self.beastknuckles:
+                    toughness -= 1
                 if savage and wound_roll == 10:
                     wounds += 1.0
                     savage = False
@@ -89,7 +105,7 @@ class AttackData(object):
 
 def roll_n_dice(n):
     roll = []
-    for x in range(n):
+    for _ in range(n):
         roll.append(random.randint(1, 10))
     return roll
 
@@ -101,7 +117,35 @@ def is_valid_roll(roll):
 def roll_value(roll):
     if is_valid_roll(roll):
         return sum(roll)
-    return 0
+    return 0.0
+
+
+def maw_sim(iterations):
+    print 'Calculating maw chances at {0} iterations'.format(iterations)
+
+    n_dice_avg = {}
+    n_dice_failures = {}
+    for num_dice in range(2, 7):
+        n_dice_failures[num_dice] = 0.0
+
+    for iteration in range(iterations):
+        for num_dice in range(2, 7):
+            total = roll_value(roll_n_dice(num_dice))
+            if total == 0.0:
+                n_dice_failures[num_dice] += 1.0
+
+            if iteration == 0:
+                n_dice_avg[num_dice] = total
+            elif iteration == 1:
+                n_dice_avg[num_dice] = (total + n_dice_avg[num_dice]) / 2.0
+            elif iteration >= 2:
+                # Cumulative moving average
+                n_dice_avg[num_dice] = (n_dice_avg[num_dice] * iteration + total) / (iteration + 1.0)
+
+        # print 'Table total for {0} dice is: {1}'.format(num_dice, total)
+
+    for num_dice in range(2, 7):
+        print '{0} dice cumulative average is {1}, fail chance is {2:.4f}'.format(num_dice, (n_dice_avg[num_dice] / iterations) * 100.0, )
 
 
 def gathering_sim(players, iterations):
@@ -167,14 +211,16 @@ def main():
     parser.add_argument('--hit', type=int, help='The hit value of the attack', default=7)
     parser.add_argument('--strength', type=int, help='The strength of the attack', default=3)
     parser.add_argument('--savage', type=int, help='Weapon has Savage', default=0)
-    parser.add_argument('--cwaxe', type=int, help='Weapon is Counter-weight Axe', default=0)
+    parser.add_argument('--cwaxe', type=int, help='On perfect hit, auto-wound', default=0)
     parser.add_argument('--devastating', type=int, help='Rank of weapon devastating', default=0)
-    parser.add_argument('--scrapsword', type=int, help='Weapon is Scrap Sword', default=0)
-    parser.add_argument('--scrapdagger', type=int, help='Weapon is Scrap Dagger', default=0)
+    parser.add_argument('--scrapsword', type=int, help='On perfect hit, rest of attack is +4 str', default=0)
+    parser.add_argument('--mightystrike', type=int, help='On perfect hit, rest of attack is +2 str', default=0)
     parser.add_argument('--screamingset', type=int, help='Activate bonus for Screaming Armor', default=0)
     parser.add_argument('--earlyiron', type=int, help='Weapon has Early Iron', default=0)
     parser.add_argument('--sharp', type=int, help='Weapon has Sharp', default=0)
-    parser.add_argument('--hollow', type=int, help='On perfect hit make 1 additional attack roll', default=0)
+    parser.add_argument('--combomaster', type=int, help='On perfect hit make 1 additional attack roll', default=0)
+    parser.add_argument('--beastknuckles', type=int, help='On wound, monster gains -1 toughness', default=0)
+    parser.add_argument('--axe', type=int, help='On wound, attempt to reroll once', default=0)
 
     args = parser.parse_args()
 
@@ -190,20 +236,26 @@ def main():
         attack_data.devastating = args.devastating
         if args.scrapsword:
             attack_data.scrapsword = True
-        if args.scrapdagger:
-            attack_data.scrapdagger = True
+        if args.mightystrike:
+            attack_data.mightystrike = args.mightystrike
         if args.screamingset:
             attack_data.screamingset = True
         if args.earlyiron:
             attack_data.earlyiron = True
         if args.sharp:
             attack_data.sharp = True
-        if args.hollow:
-            attack_data.hollow = True
+        if args.combomaster:
+            attack_data.combomaster = True
+        if args.beastknuckles:
+            attack_data.beastknuckles = True
+        if args.axe:
+            attack_data.axe = True
 
-        for toughness in range(attack_data.toughness, 16, 2):
+        for toughness in range(attack_data.toughness, 16, 1):
             attack_data.toughness = toughness
             attack_sim(args.iterations, attack_data)
+    elif args.mode == 3:
+        maw_sim(args.iterations)
     else:
         print 'invalid mode'
 
