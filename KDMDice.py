@@ -29,6 +29,7 @@ class AttackData(object):
         self.combomaster = False
         self.beastknuckles = False
         self.axe = False
+        self.butcher = False
 
     def is_wound(self, roll, strength, toughness):
         if roll == 1:
@@ -37,7 +38,12 @@ class AttackData(object):
             return True
         if self.sharp:
             strength += random.randint(1, 10)
-        return roll + strength >= toughness
+        wound = roll + strength >= toughness
+        if wound and self.butcher:
+            butcher_roll = random.randint(1, 10)
+            if butcher_roll >= 8:
+                wound = False
+        return wound
 
     @staticmethod
     def is_hit(roll, hit):
@@ -145,7 +151,7 @@ def maw_sim(iterations):
         # print 'Table total for {0} dice is: {1}'.format(num_dice, total)
 
     for num_dice in range(2, 7):
-        print '{0} dice cumulative average is {1}, fail chance is {2:.4f}'.format(num_dice, (n_dice_avg[num_dice] / iterations) * 100.0, )
+        print '{0} dice cumulative average is {1}, fail chance is {2:.1f}'.format(num_dice, n_dice_avg[num_dice], (n_dice_failures[num_dice] / iterations) * 100.0)
 
 
 def gathering_sim(players, iterations):
@@ -221,6 +227,7 @@ def main():
     parser.add_argument('--combomaster', type=int, help='On perfect hit make 1 additional attack roll', default=0)
     parser.add_argument('--beastknuckles', type=int, help='On wound, monster gains -1 toughness', default=0)
     parser.add_argument('--axe', type=int, help='On wound, attempt to reroll once', default=0)
+    parser.add_argument('--butcher', type=int, help='On wound, roll, 8,9,10 wound fails', default=0)
 
     args = parser.parse_args()
 
@@ -250,6 +257,8 @@ def main():
             attack_data.beastknuckles = True
         if args.axe:
             attack_data.axe = True
+        if args.butcher:
+            attack_data.butcher = True
 
         for toughness in range(attack_data.toughness, 16, 1):
             attack_data.toughness = toughness
