@@ -109,7 +109,7 @@
     "accuracy" : 6,
     "strength" : 6,
 
-    "special mods" : ["Great Weapon", "Slow", "Frail", "Deadly", "Devastating 1"]
+    "special mods" : ["Grand Weapon", "Slow", "Frail", "Deadly", "Devastating 1"]
   },
   "Dragon Slayer" :
   {
@@ -117,7 +117,7 @@
     "accuracy" : 6,
     "strength" : 9,
 
-    "special mods" : ["Great Weapon", "Slow", "Frail", "Sharp", "Devastating 1", "Early Iron"]
+    "special mods" : ["Grand Weapon", "Slow", "Frail", "Sharp", "Devastating 1", "Early Iron"]
   },
   "Finger of God" :
   {
@@ -173,7 +173,7 @@
     "accuracy" : 6,
     "strength" : 14,
 
-    "special mods" : ["Great Weapon", "Slow", "Sharp", "Devastating 2"]
+    "special mods" : ["Grand Weapon", "Slow", "Sharp", "Devastating 2"]
   },
   "Ring Whip" :
   {

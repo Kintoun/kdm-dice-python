@@ -101,11 +101,18 @@ def do_one_attack(weapon, character, toughness, extra_mods):
 
     auto_wound = False
     savage = "Savage" in weapon.special_mods
-    axe_spec = "Axe Spec" in extra_mods or "Axe Spec" in character.fighting_arts
+    axe_spec = False
+    if "Axe Spec" in extra_mods or "Axe Spec" in character.fighting_arts:
+        if "Axe" in weapon.special_mods:
+            axe_spec = True
+    if "Grand Spec" in extra_mods or "Grand Spec" in character.fighting_arts:
+        if "Grand Weapon" in weapon.special_mods:
+            acc -= 1
 
     hit_rolls = roll_n_dice(spd)
     if "Combo Master" in weapon.special_mods:
         apply_combomaster(hit_rolls)
+    # TODO: Does Combo Master stack?
     if "Combo Master" in character.fighting_arts:
         apply_combomaster(hit_rolls)
 
@@ -217,6 +224,13 @@ def main():
         weapon.print_info()
         if args.extra_mods:
             print 'Using extra modifiers: [\"{0}\"]'.format('\", \"'.join(args.extra_mods))
+        if "Grand Spec" in args.extra_mods or "Grand Spec" in character.fighting_arts:
+            if "Grand Weapon" not in weapon.special_mods:
+                print "WARNING: Grand Spec specified but weapon is not a Grand Weapon"
+
+        if "Axe Spec" in args.extra_mods or "Axe Spec" in character.fighting_arts:
+            if "Axe" not in weapon.special_mods:
+                print "WARNING: Axe Spec specified but weapon is not a Axe"
 
         if args.toughness:
             run_attack_sim(weapon, character, args.toughness, args.extra_mods, args.iterations)
