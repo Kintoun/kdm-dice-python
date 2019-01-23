@@ -21,22 +21,40 @@ class Weapon(object):
     def print_info(self):
         print 'Using weapon \"{0}\" {1}/{2}/{3}'.format(self.name, self.speed, self.accuracy, self.strength)
         if self.special_mods:
-            print 'Using special modifiers: [\"{0}\"]'.format('\", \"'.join(self.special_mods))
+            print 'Weapon properties: [\"{0}\"]'.format('\", \"'.join(self.special_mods))
 
 
 class Character(object):
     def __init__(self, name, json_obj):
         self.name = name
-        self.speed = json_obj["speed"]
-        self.accuracy = json_obj["accuracy"]
-        self.strength = json_obj["strength"]
+        self.base_speed = json_obj["speed"]
+        self.base_accuracy = json_obj["accuracy"]
+        self.base_strength = json_obj["strength"]
         self.fighting_arts = {}
+        self.extra_speed = 0
+        self.extra_accuracy = 0
+        self.extra_strength = 0
         if "fighting arts" in json_obj:
             self.fighting_arts = json_obj["fighting arts"]
 
+    @property
+    def speed(self):
+        return self.base_speed + self.extra_speed
+
+    @property
+    def accuracy(self):
+        return self.base_accuracy + self.extra_accuracy
+
+    @property
+    def strength(self):
+        return self.base_strength + self.extra_strength
+
     def print_info(self):
-        print 'Using character \"{0}\" +{1} spd, +{2} acc, +{3} str'.format(self.name, self.speed, self.accuracy,
-                                                                            self.strength)
+        print 'Using character \"{0}\" +{1} spd, +{2} acc, +{3} str'.format(self.name, self.base_speed,
+                                                                            self.base_accuracy, self.base_strength)
+        if self.base_speed or self.base_accuracy or self.strength:
+            print 'Bonus +{0} spd, +{1} acc, +{2} str'.format(self.extra_speed, self.extra_accuracy,
+                                                              self.extra_strength)
         if self.fighting_arts:
             print 'Using fighting arts: [\"{0}\"]'.format('\", \"'.join(self.fighting_arts))
 
@@ -105,9 +123,6 @@ def do_one_attack(weapon, character, toughness, extra_mods):
     if "Axe Spec" in extra_mods or "Axe Spec" in character.fighting_arts:
         if "Axe" in weapon.special_mods:
             axe_spec = True
-    if "Grand Spec" in extra_mods or "Grand Spec" in character.fighting_arts:
-        if "Grand Weapon" in weapon.special_mods:
-            acc -= 1
 
     hit_rolls = roll_n_dice(spd)
     if "Combo Master" in weapon.special_mods:
@@ -180,6 +195,9 @@ def run_attack_sim(weapon, character, toughness, extra_mods, iterations):
             cumhitavg = (cumhitavg * iteration + hits) / (iteration + 1)
             cumwoundavg = (cumwoundavg * iteration + wounds) / (iteration + 1)
 
+    if "Painted" in extra_mods:
+        cumhitavg *= 2
+        cumwoundavg *= 2
     print 'T{0} - Expected hits: {1:.2f}, wounds: {2:.2f}'.format(toughness, cumhitavg, cumwoundavg)
 
 
@@ -212,34 +230,57 @@ def main():
     parser.add_argument('--axe', type=int, help='On wound, attempt to reroll once', default=0)
     parser.add_argument('--butcher', type=int, help='On wound, roll, 8,9,10 wound fails', default=0)
 
-    parser.add_argument('--extra_mods', nargs="*", help='String list of extra mods like axe spec, spear mastery, etc',
+    parser.add_argument('--extra_mods', type=str, help='String list of extra mods like axe spec, spear mastery, etc',
                         default='')
 
     args = parser.parse_args()
 
     weapon = load_weapon_data(args.weapon)
     character = load_character_data(args.character)
+    extra_mods = args.extra_mods.split(',')
     if weapon and character:
-        character.print_info()
-        weapon.print_info()
-        if args.extra_mods:
-            print 'Using extra modifiers: [\"{0}\"]'.format('\", \"'.join(args.extra_mods))
-        if "Grand Spec" in args.extra_mods or "Grand Spec" in character.fighting_arts:
+        if extra_mods:
+            print 'Using extra modifiers: [\"{0}\"]'.format('\", \"'.join(extra_mods))
+        if "Grand Spec" in extra_mods or "Grand Spec" in character.fighting_arts:
             if "Grand Weapon" not in weapon.special_mods:
                 print "WARNING: Grand Spec specified but weapon is not a Grand Weapon"
+            else:
+                character.extra_accuracy += 1
 
-        if "Axe Spec" in args.extra_mods or "Axe Spec" in character.fighting_arts:
+        if "Axe Spec" in extra_mods or "Axe Spec" in character.fighting_arts:
             if "Axe" not in weapon.special_mods:
                 print "WARNING: Axe Spec specified but weapon is not a Axe"
 
+        if "White Lion Set" in extra_mods or "White Lion Set" in character.fighting_arts:
+            if "Dagger" not in weapon.special_mods and "Katar" not in weapon.special_mods:
+                print "WARNING: White Lion Set specified but no Dagger or Katar equipped"
+            else:
+                character.extra_strength += 2
+                character.extra_speed += 1
+
+        if "Paired" in extra_mods:
+            if "Paired" not in weapon.special_mods:
+                print "WARNING: Paired specified but supplied weapon does not support Paired"
+            else:
+                weapon.speed *= 2
+
+        if "Strategist" in extra_mods or "Strategist" in character.fighting_arts:
+            if "Bow" not in weapon.special_mods:
+                print "WARNING: Strategist specified but bow weapon not specified"
+            else:
+                character.extra_accuracy += 2
+
+        character.print_info()
+        weapon.print_info()
+
         if args.toughness:
-            run_attack_sim(weapon, character, args.toughness, args.extra_mods, args.iterations)
+            run_attack_sim(weapon, character, args.toughness, extra_mods, args.iterations)
         else:
-            run_attack_sim(weapon, character, 10, args.extra_mods, args.iterations)
-            #run_attack_sim(weapon, character, 11, args.extra_mods, args.iterations)
-            run_attack_sim(weapon, character, 12, args.extra_mods, args.iterations)
-            run_attack_sim(weapon, character, 14, args.extra_mods, args.iterations)
-            #run_attack_sim(weapon, character, 15, args.extra_mods, args.iterations)
+            run_attack_sim(weapon, character, 10, extra_mods, args.iterations)
+            #run_attack_sim(weapon, character, 11, extra_mods, args.iterations)
+            run_attack_sim(weapon, character, 12, extra_mods, args.iterations)
+            run_attack_sim(weapon, character, 14, extra_mods, args.iterations)
+            #run_attack_sim(weapon, character, 15, extra_mods, args.iterations)
 
 
 if __name__ == "__main__":

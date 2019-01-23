@@ -11,6 +11,13 @@
     "accuracy" : 1,
     "strength" : 2
   },
+  "Bo" :
+  {
+    "speed" : 0,
+    "accuracy" : 2,
+    "strength" : 2,
+    "fighting arts" : ["Strategist"]
+  },
   "Xena" :
   {
     "speed" : 1,
