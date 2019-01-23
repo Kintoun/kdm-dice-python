@@ -117,7 +117,7 @@ def do_one_attack(weapon, character, toughness, extra_mods):
     str = weapon.strength + character.strength
     acc = weapon.accuracy - character.accuracy
 
-    auto_wound = False
+    screaming_auto_wound = False
     savage = "Savage" in weapon.special_mods
     axe_spec = False
     if "Axe Spec" in extra_mods or "Axe Spec" in character.fighting_arts:
@@ -149,7 +149,8 @@ def do_one_attack(weapon, character, toughness, extra_mods):
     for hit_roll in hit_rolls:
         if is_hit(hit_roll, acc):
             hits += 1.0
-            if ("Counterweighted Axe" in weapon.special_mods and hit_roll == 10) or auto_wound:
+            if ("Counterweighted Axe" in weapon.special_mods and hit_roll == 10) or screaming_auto_wound:
+                screaming_auto_wound = False
                 wounds += 1.0
                 continue
             wound_roll = random.randint(1, 10)
@@ -167,43 +168,44 @@ def do_one_attack(weapon, character, toughness, extra_mods):
                 wounds += 1
             if "Devastating 2" in weapon.special_mods:
                 wounds += 2
-            # TODO: Not entirely true actually. Only the next wound auto-wounds not all future wounds this atk
             if "Screaming Set" in character.fighting_arts or "Screaming Set" in extra_mods:
-                auto_wound = True
+                # this wound result may be applied to next wound attempt
+                screaming_auto_wound = True
             if "Beast Knuckles" in weapon.special_mods:
+                # -1 toughness for rest of attack per wound
                 toughness -= 1
             if savage and wound_roll == 10:
                 wounds += 1.0
+                # savage can only activate once per attack
                 savage = False
     return hits, wounds
 
 
 def run_attack_sim(weapon, character, toughness, extra_mods, iterations):
-    cumhitavg = 0.0
-    cumwoundavg = 0.0
+    cum_hit_avg = 0.0
+    cum_wound_avg = 0.0
     for iteration in range(iterations):
         hits, wounds = do_one_attack(weapon, character, toughness, extra_mods)
 
         if iteration == 0:
-            cumhitavg = hits
-            cumwoundavg = wounds
+            cum_hit_avg = hits
+            cum_wound_avg = wounds
         elif iteration == 1:
-            cumhitavg = (hits + cumhitavg) / 2
-            cumwoundavg = (wounds + cumwoundavg) / 2
+            cum_hit_avg = (hits + cum_hit_avg) / 2
+            cum_wound_avg = (wounds + cum_wound_avg) / 2
         elif iteration >= 2:
             # Cumulative moving average
-            cumhitavg = (cumhitavg * iteration + hits) / (iteration + 1)
-            cumwoundavg = (cumwoundavg * iteration + wounds) / (iteration + 1)
+            cum_hit_avg = (cum_hit_avg * iteration + hits) / (iteration + 1)
+            cum_wound_avg = (cum_wound_avg * iteration + wounds) / (iteration + 1)
 
     if "Painted" in extra_mods:
-        cumhitavg *= 2
-        cumwoundavg *= 2
-    print 'T{0} - Expected hits: {1:.2f}, wounds: {2:.2f}'.format(toughness, cumhitavg, cumwoundavg)
+        cum_hit_avg *= 2
+        cum_wound_avg *= 2
+    print 'T{0} - Expected hits: {1:.2f}, wounds: {2:.2f}'.format(toughness, cum_hit_avg, cum_wound_avg)
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="attack_sim",
-                                     description='Calculate dice rolls for KD:M',
+    parser = argparse.ArgumentParser(prog="attack_sim", description='Calculate dice rolls for KD:M',
                                      add_help=True)
     parser.add_argument('weapon', type=str, help='The name of the weapon to run the sim on')
 
@@ -211,26 +213,8 @@ def main():
                         default="Default Strength")
     parser.add_argument('--iterations', type=int, help='The number of iterations to run',
                         default=100000)
-
-    # Attacking sim
     parser.add_argument('--toughness', type=int, help='The toughness of the monster', default=0)
-    parser.add_argument('--speed', type=int, help='The speed of the attack', default=2)
-    parser.add_argument('--hit', type=int, help='The hit value of the attack', default=7)
-    parser.add_argument('--strength', type=int, help='The strength of the attack', default=3)
-    parser.add_argument('--savage', type=int, help='Weapon has Savage', default=0)
-    parser.add_argument('--cwaxe', type=int, help='On perfect hit, auto-wound', default=0)
-    parser.add_argument('--devastating', type=int, help='Rank of weapon devastating', default=0)
-    parser.add_argument('--scrapsword', type=int, help='On perfect hit, rest of attack is +4 str', default=0)
-    parser.add_argument('--mightystrike', type=int, help='On perfect hit, rest of attack is +2 str', default=0)
-    parser.add_argument('--screamingset', type=int, help='Activate bonus for Screaming Armor', default=0)
-    parser.add_argument('--earlyiron', type=int, help='Weapon has Early Iron', default=0)
-    parser.add_argument('--sharp', type=int, help='Weapon has Sharp', default=0)
-    parser.add_argument('--combomaster', type=int, help='On perfect hit make 1 additional attack roll', default=0)
-    parser.add_argument('--beastknuckles', type=int, help='On wound, monster gains -1 toughness', default=0)
-    parser.add_argument('--axe', type=int, help='On wound, attempt to reroll once', default=0)
-    parser.add_argument('--butcher', type=int, help='On wound, roll, 8,9,10 wound fails', default=0)
-
-    parser.add_argument('--extra_mods', type=str, help='String list of extra mods like axe spec, spear mastery, etc',
+    parser.add_argument('--extra_mods', type=str, help='CSV list of extra mods. e.g. \"Axe Spec, Spear Mastery\"',
                         default='')
 
     args = parser.parse_args()
@@ -266,9 +250,13 @@ def main():
 
         if "Strategist" in extra_mods or "Strategist" in character.fighting_arts:
             if "Bow" not in weapon.special_mods:
-                print "WARNING: Strategist specified but bow weapon not specified"
+                print "WARNING: Strategist specified but bow weapon not equipped"
             else:
                 character.extra_accuracy += 2
+
+        if "Screaming Set" in extra_mods or "Screaming Set" in character.fighting_arts:
+            if "Spear" not in weapon.special_mods:
+                print "WARNING: Screaming Set specified but spear weapon not equipped"
 
         character.print_info()
         weapon.print_info()
