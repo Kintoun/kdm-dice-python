@@ -63,13 +63,13 @@
 
     "special mods" : ["Bow"]
   },
-  "Counter-weight Axe" :
+  "Counterweighted Axe" :
   {
     "speed" : 2,
     "accuracy" : 6,
     "strength" : 4,
 
-    "special mods" : ["Axe", "Counter-weight Axe"]
+    "special mods" : ["Axe", "Counterweighted Axe"]
   },
   "Skullcap Hammer" :
   {

@@ -1,9 +1,15 @@
 {
-  "Default_Sparta" :
+  "Default Sparta" :
   {
     "speed" : 0,
     "accuracy" : 0,
     "strength" : 1
+  },
+  "Default Strength" :
+  {
+    "speed" : 0,
+    "accuracy" : 1,
+    "strength" : 2
   },
   "Xena" :
   {
