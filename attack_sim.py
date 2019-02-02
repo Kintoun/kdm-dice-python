@@ -142,7 +142,7 @@ def do_one_attack(weapon, character, toughness, extra_mods):
             str += 4
 
     if "Early Iron" in weapon.special_mods and 1 in hit_rolls:
-        return 0.0, 0.0
+        return 0.0, 0.0, 1.0
 
     hits = 0.0
     wounds = 0.0
@@ -178,15 +178,17 @@ def do_one_attack(weapon, character, toughness, extra_mods):
                 wounds += 1.0
                 # savage can only activate once per attack
                 savage = False
-    return hits, wounds
+    return hits, wounds, 0.0
 
 
 def run_attack_sim(weapon, character, toughness, extra_mods, iterations):
     cum_hit_avg = 0.0
     cum_wound_avg = 0.0
+    cum_context = 0.0
     for iteration in range(iterations):
-        hits, wounds = do_one_attack(weapon, character, toughness, extra_mods)
+        hits, wounds, context = do_one_attack(weapon, character, toughness, extra_mods)
 
+        cum_context += context
         if iteration == 0:
             cum_hit_avg = hits
             cum_wound_avg = wounds
@@ -202,6 +204,9 @@ def run_attack_sim(weapon, character, toughness, extra_mods, iterations):
         cum_hit_avg *= 2
         cum_wound_avg *= 2
     print 'T{0} - Expected hits: {1:.2f}, wounds: {2:.2f}'.format(toughness, cum_hit_avg, cum_wound_avg)
+    # print contextual data
+    if "Early Iron" in weapon.special_mods:
+        print "Early Iron failure rate: {0:.2f}".format(cum_context / iterations * 100.0)
 
 
 def main():
@@ -214,6 +219,7 @@ def main():
     parser.add_argument('--iterations', type=int, help='The number of iterations to run',
                         default=100000)
     parser.add_argument('--toughness', type=int, help='The toughness of the monster', default=0)
+    parser.add_argument('--butcher', type=int, help='Special mode for calculating Butcher lv3 fight', default=0)
     parser.add_argument('--extra_mods', type=str, help='CSV list of extra mods. e.g. \"Axe Spec, Spear Mastery\"',
                         default='')
 
@@ -263,6 +269,36 @@ def main():
 
         if args.toughness:
             run_attack_sim(weapon, character, args.toughness, extra_mods, args.iterations)
+        elif args.butcher:
+            extra_mods.append("Butcher lv3")
+
+            print "Butcher lv3 base:"
+            run_attack_sim(weapon, character, 15, extra_mods, args.iterations)
+
+            print "Butcher lv3 frenzy 1:"
+            character.extra_speed += 1
+            character.extra_strength += 1
+            run_attack_sim(weapon, character, 15, extra_mods, args.iterations)
+
+            print "Butcher lv3 frenzy 2:"
+            character.extra_speed += 1
+            character.extra_strength += 1
+            run_attack_sim(weapon, character, 15, extra_mods, args.iterations)
+
+            print "Butcher lv3 frenzy 3:"
+            character.extra_speed += 1
+            character.extra_strength += 1
+            run_attack_sim(weapon, character, 15, extra_mods, args.iterations)
+
+            print "Butcher lv3 frenzy 4:"
+            character.extra_speed += 1
+            character.extra_strength += 1
+            run_attack_sim(weapon, character, 15, extra_mods, args.iterations)
+
+            print "Butcher lv3 frenzy 5:"
+            character.extra_speed += 1
+            character.extra_strength += 1
+            run_attack_sim(weapon, character, 15, extra_mods, args.iterations)
         else:
             run_attack_sim(weapon, character, 10, extra_mods, args.iterations)
             #run_attack_sim(weapon, character, 11, extra_mods, args.iterations)

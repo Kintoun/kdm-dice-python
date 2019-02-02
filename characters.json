@@ -25,6 +25,13 @@
     "strength" : 5,
     "fighting arts" : ["Combo Master", "Mighty Attack 1"]
   },
+  "Kinzan" :
+  {
+    "speed" : 0,
+    "accuracy" : 3,
+    "strength" : 4,
+    "fighting arts" : ["Mighty Attack 1"]
+  },
   "Boner" :
   {
     "speed" : 2,
