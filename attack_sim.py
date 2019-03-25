@@ -149,7 +149,7 @@ def do_one_attack(weapon, character, toughness, extra_mods):
     for hit_roll in hit_rolls:
         if is_hit(hit_roll, acc):
             hits += 1.0
-            if ("Counterweighted Axe" in weapon.special_mods and hit_roll == 10) or screaming_auto_wound:
+            if (("Counterweighted Axe" in weapon.special_mods or "Acid Tooth Dagger" in weapon.special_mods) and hit_roll == 10) or screaming_auto_wound:
                 screaming_auto_wound = False
                 wounds += 1.0
                 continue
@@ -215,7 +215,7 @@ def main():
     parser.add_argument('weapon', type=str, help='The name of the weapon to run the sim on')
 
     parser.add_argument('--character', type=str, help='The name of the character to use in the sim',
-                        default="Default Strength")
+                        default="Default")
     parser.add_argument('--iterations', type=int, help='The number of iterations to run',
                         default=100000)
     parser.add_argument('--toughness', type=int, help='The toughness of the monster', default=0)

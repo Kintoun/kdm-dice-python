@@ -1,15 +1,15 @@
 {
-  "Default Sparta" :
+  "Default" :
   {
     "speed" : 0,
     "accuracy" : 0,
-    "strength" : 1
+    "strength" : 0
   },
   "Default Strength" :
   {
     "speed" : 0,
-    "accuracy" : 1,
-    "strength" : 2
+    "accuracy" : 0,
+    "strength" : 1
   },
   "Bo" :
   {

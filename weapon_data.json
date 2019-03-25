@@ -214,5 +214,53 @@
     "strength" : 4,
 
     "special mods" : ["Katar", "Beast Knuckles", "Paired"]
+  },
+  "Rib Blade" :
+  {
+    "speed" : 1,
+    "accuracy" : 6,
+    "strength" : 5,
+
+    "special mods" : ["Grand", "Slow", "Deadly"]
+  },
+  "Gaxe" :
+  {
+    "speed" : 2,
+    "accuracy" : 5,
+    "strength" : 4,
+
+    "special mods" : ["Axe", "Savage", "Gaxe"]
+  },
+  "Greater Gaxe" :
+  {
+    "speed" : 2,
+    "accuracy" : 6,
+    "strength" : 4,
+
+    "special mods" : ["Axe", "Deadly", "Mighty Attack 2"]
+  },
+  "Riot Mace" :
+  {
+    "speed" : 2,
+    "accuracy" : 5,
+    "strength" : 5,
+
+    "special mods" : ["Club", "Deadly"]
+  },
+  "Acid Tooth Dagger" :
+  {
+    "speed" : 2,
+    "accuracy" : 7,
+    "strength" : 2,
+
+    "special mods" : ["Dagger", "Paired", "Acid Tooth Dagger"]
+  },
+  "Black Sword" :
+  {
+    "speed" : 3,
+    "accuracy" : 5,
+    "strength" : 10,
+
+    "special mods" : ["Sword"]
   }
 }
